@@ -7,8 +7,21 @@ from .models import User, ClienteProfile, PrestadorProfile
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     list_display = ('email', 'first_name', 'last_name', 'idade', 'is_active')
+
+    def get_idade(self, obj):
+        return obj.idade
+    
+    get_idade.short_description = 'Idade'
+
     list_filter = ('is_active', 'date_joined')
     search_fields = ('email', 'first_name')
+
+    fieldsets = UserAdmin.fieldsets + (
+        'Informações pessoais', {
+            'fields' : ('dt_nascimento',)
+        }
+    )
+
 
 @admin.register(ClienteProfile)
 class ClienteProfileAdmin(admin.ModelAdmin):
