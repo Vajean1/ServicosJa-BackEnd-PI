@@ -3,41 +3,32 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 from datetime import date
 import requests
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 
 #Api do CEP e Nominatim para pegar as coordenadas diretas do usuário
 
-def pegar_latitude_longitude_do_endereco(cep, rua, numero):
+def pegar_latitude_longitude_do_endereco(cep : int, rua : str, numero : int) -> float:
     try:
-        cep = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
-        cep_data = cep.json()
+        cep_response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
+        cep_response.raise_for_status()
+        cep_data = cep_response.json()
         
-        if "erro" in cep:
+        if "erro" in cep_data:
             return None, None
-        
-        endereco = f"{rua}, {numero}, {cep_data['localidade']}, {cep_data['uf']}"
 
-        url = 'https://nominatim.openstreetmap.org/search'
+        endereco_completo = f"{rua}, {numero}, {cep_data['localidade']}, {cep_data['uf']}, Brasil"
 
-        parametros = {
-            "q" : endereco,
-            "format" : "json",
-            "limit" : 1,
-        } 
+        geolocator = Nominatim(user_agent="ServicosJa/1.0", timeout=10)
 
-        headers = {
-            'User-Agent' : 'ServicosJa/1.0'
-        }
+        location = geolocator.geocode(endereco_completo)
 
-        response = requests.get(url, params=parametros, headers=headers)
-        data = response.json()
+        if location:
+            return location.latitude, location.longitude
+        else:
+            return None, None
 
-        if data:
-            return float(data[0]['lat'], float(data[0]['lon']))
-        
-        return None, None
-    
     except Exception as error:
-        print(error)
         return None, None
 
 class User(AbstractUser):
@@ -74,7 +65,7 @@ class ClienteProfile(models.Model):
 class PrestadorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     biografia = models.TextField(blank=True)
-    telefone_publico = models.CharField(max_length=20)
+    telefone_publico = models.CharField(max_length=11)
     cep = models.CharField(max_length=9)
     rua = models.CharField(max_length=150)
     numero_casa = models.CharField(max_length=20)

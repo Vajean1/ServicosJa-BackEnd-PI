@@ -16,12 +16,6 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('is_active', 'date_joined')
     search_fields = ('email', 'first_name')
 
-    fieldsets = UserAdmin.fieldsets + (
-        'Informações pessoais', {
-            'fields' : ('dt_nascimento',)
-        }
-    )
-
 
 @admin.register(ClienteProfile)
 class ClienteProfileAdmin(admin.ModelAdmin):
