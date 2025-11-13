@@ -9,3 +9,6 @@ class PortfolioItem(models.Model):
 
     def __str__(self):
         return self.titulo or "Item sem título"
+
+
+    #Retirar descricao, titulo.
