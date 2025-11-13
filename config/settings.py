@@ -49,16 +49,27 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_spectacular',
 
-    #Aqui para baixo serão os apps do django para a criação das api
-    'accounts.apps.AccountsConfig',
-    'servicos.apps.ServicosConfig',
-    'avaliacoes.apps.AvaliacoesConfig',
-    'portfolio.apps.PortfolioConfig',
-    'contratacoes.apps.ContratacoesConfig',
+    #Aqui para baixo serão os apps do django para a criação da api
+    'accounts',
+    'servicos',
+    'avaliacoes',
+    'portfolio',
+    'contratacoes',
 
 
 
 ]
+
+AUTH_USER_MODEL = 'accounts.User'
+
+#Pensar em uma forma de adicionar imagem no perfil e funcionar
+
+#MIDIA_URL = '/media/'
+#MIDIA_ROOT = BASE_DIR / 'media'
+
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
