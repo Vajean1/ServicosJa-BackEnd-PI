@@ -48,7 +48,13 @@ class User(AbstractUser):
     #isso é principalmente para o createsuperuser, mas lá no serializer precisa adicionar um campo de requerimento do email e dt nascimento e etc!
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
+    #Atentar para colocar campo necessário no serializer.
+    @property
     def idade(self):
+
+        if not self.dt_nascimento:
+            return 'Não informado.'
+
         hoje = date.today()
         idade = hoje.year - self.dt_nascimento.year
         if (hoje.month, hoje.day) < (self.dt_nascimento.month, self.dt_nascimento.day):
