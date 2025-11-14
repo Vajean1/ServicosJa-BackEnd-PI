@@ -2,9 +2,9 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 from datetime import date
+from django.forms import ValidationError
 import requests
 from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 
 #Api do CEP e Nominatim para pegar as coordenadas diretas do usuário
 
@@ -32,6 +32,13 @@ def pegar_latitude_longitude_do_endereco(cep : int, rua : str, numero : int) -> 
         return None, None
 
 class User(AbstractUser):
+
+    TIPO_USUARIO_ESCOLHA = [
+        ('cliente', 'Cliente'),
+        ('prestador', 'Prestador de Serviço'),
+        ]
+
+    tipo_usuario = models.CharField(max_length=10, choices=TIPO_USUARIO_ESCOLHA, null=True, blank=True)
     email = models.EmailField(unique=True)
     dt_nascimento = models.DateField(null=True, blank=True)
 
@@ -41,7 +48,7 @@ class User(AbstractUser):
 
     #Atentar para colocar campo necessário no serializer.
     @property
-    def idade(self):
+    def idade(self) -> int:
 
         if not self.dt_nascimento:
             return 'Não informado.'
@@ -52,8 +59,18 @@ class User(AbstractUser):
             idade -= 1
         return idade
 
+    def clean(self):
+        if self.tipo_usuario == 'cliente' and hasattr(self, 'perfil_prestador'):
+            raise ValidationError("Este usuário já é prestador.")
+        if self.tipo_usuario == 'prestador' and hasattr(self, 'perfil_cliente'):
+            raise ValidationError("Este usuário já é cliente.")
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
 class ClienteProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_cliente')
     telefone_contato = models.CharField(max_length=20, blank=True)
     cep = models.CharField(max_length=9, blank=True)
     rua = models.CharField(max_length=150, blank=True)
@@ -63,7 +80,7 @@ class ClienteProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class PrestadorProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_prestador')
     biografia = models.TextField(blank=True)
     telefone_publico = models.CharField(max_length=11)
     cep = models.CharField(max_length=9)
@@ -94,10 +111,15 @@ class PrestadorProfile(models.Model):
     
     def save(self, *args, **kwargs):
         
-        if self.cep and self.rua and self.numero_casa and not self.latitude:
-            lat, lon = pegar_latitude_longitude_do_endereco(self.cep, self.rua, self.numero_casa)
+        if self.cep and self.rua and self.numero_casa :
+            if self.pk:
+                antigo = PrestadorProfile.objects.get(pk=self.pk)
+                if (antigo.cep != self.cep or antigo.rua != self.rua or antigo.numero_casa != self.numero_casa):
+                    lat, lon =pegar_latitude_longitude_do_endereco(self.cep, self.rua, self.numero_casa)
+                    self.latitude = lat
+                    self.longitude = lon
             
-            if lat and lon:
-                self.latitude = lat
-                self.longitude = lon
         super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} ({self.user.email})"
