@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, ClienteProfile, PrestadorProfile
+from .models import User, ClienteProfile, PrestadorProfile, pegar_latitude_longitude_do_endereco
 
 #Aqui mostra nossos models de banco de dados direto na página de admin.
 
@@ -38,4 +38,11 @@ class PrestadorProfileAdmin(admin.ModelAdmin):
         'created_at',
         'updated_at',
     )
-
+    #forçar salvar a latitude e longitude
+    def save_model(self, request, obj, form, change):
+        if obj.cep and obj.rua and obj.numero_casa:
+            lat, lon = pegar_latitude_longitude_do_endereco(obj.cep, obj.rua, obj.numero_casa)
+            obj.latitude = lat
+            obj.longitude = lon
+        
+        super().save_model(request, obj, form, change)

@@ -3,8 +3,8 @@ from .models import ServicoRealizado
 
 @admin.register(ServicoRealizado)
 class ServicoRealizadoAdmin(admin.ModelAdmin):
-    list_display = ('cliente_user', 'prestador_user', 'servico', 'status', 'data_realizacao')
-    list_filter = ('status', 'data_realizacao')
+    list_display = ('cliente_user', 'prestador_user', 'servico', 'data_realizacao')
+    list_filter = ('data_realizacao',)
     search_fields = ('cliente_user__email', 'prestador_user__email')
 
     # Se atentar para quando fazer a view da api criar uma função para que seja possível somente o cliente alterar os status do serviço.
