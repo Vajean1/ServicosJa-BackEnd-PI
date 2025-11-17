@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import date
 from django.forms import ValidationError
 import requests
@@ -71,8 +71,13 @@ class User(AbstractUser):
 
 class ClienteProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_cliente')
-    telefone_contato = models.CharField(max_length=20, blank=True)
-    cep = models.CharField(max_length=9, blank=True)
+    telefone_contato = models.BigIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(9999999999999)],
+        help_text='Apenas dígitos; máximo 13 dígitos.'
+    )
+    cep = models.PositiveIntegerField(validators=[MaxValueValidator(99999999)])
     rua = models.CharField(max_length=150, blank=True)
     numero_casa = models.CharField(max_length=20, blank=True)
     complemento = models.CharField(max_length=100, blank=True)
@@ -82,8 +87,11 @@ class ClienteProfile(models.Model):
 class PrestadorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_prestador')
     biografia = models.TextField(blank=True)
-    telefone_publico = models.CharField(max_length=11)
-    cep = models.CharField(max_length=8)
+    telefone_publico = models.BigIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(9999999999999)],
+        help_text='Apenas dígitos; máximo 13 dígitos.'
+    )
+    cep = models.PositiveIntegerField(validators=[MaxValueValidator(99999999)])
     rua = models.CharField(max_length=150)
     numero_casa = models.CharField(max_length=20)
     complemento = models.CharField(max_length=100, blank=True)
