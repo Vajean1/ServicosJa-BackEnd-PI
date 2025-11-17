@@ -8,28 +8,54 @@ from geopy.geocoders import Nominatim
 
 #Api do CEP e Nominatim para pegar as coordenadas diretas do usuário
 
-def pegar_latitude_longitude_do_endereco(cep : int, rua : str, numero : int) -> float:
-    try:
-        cep_response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
-        cep_response.raise_for_status()
-        cep_data = cep_response.json()
-        
-        if "erro" in cep_data:
-            return None, None
+import requests
+from geopy.geocoders import Nominatim
+from typing import Optional, Tuple
 
-        endereco_completo = f"{rua}, {numero}, {cep_data['localidade']}, {cep_data['uf']}, Brasil"
+def pegar_latitude_longitude_do_endereco(
+    cep: str,
+    rua: str,
+    numero: str | int
+) -> Tuple[Optional[float], Optional[float], str]:
+
+    try:
+        cep = "".join(filter(str.isdigit, str(cep)))
+
+        data = requests.get(f"https://viacep.com.br/ws/{cep}/json/").json()
+        if "erro" in data:
+            return None, None, "CEP inválido"
+
+        cidade = data["localidade"]
+        uf = data["uf"]
+        bairro = data.get("bairro")
 
         geolocator = Nominatim(user_agent="ServicosJa/1.0", timeout=10)
 
-        location = geolocator.geocode(endereco_completo)
+        endereco1 = f"{rua}, {numero}, {cidade}, {uf}, Brasil"
+        loc = geolocator.geocode(endereco1)
+        if loc:
+            return loc.latitude, loc.longitude, "endereco_exato"
 
-        if location:
-            return location.latitude, location.longitude
-        else:
-            return None, None
+        endereco2 = f"{rua}, {cidade}, {uf}, Brasil"
+        loc = geolocator.geocode(endereco2)
+        if loc:
+            return loc.latitude, loc.longitude, "rua_aproximada"
 
-    except Exception as error:
-        return None, None
+        if bairro:
+            endereco3 = f"{bairro}, {cidade}, {uf}, Brasil"
+            loc = geolocator.geocode(endereco3)
+            if loc:
+                return loc.latitude, loc.longitude, "bairro_aproximado"
+
+        endereco4 = f"{cidade}, {uf}, Brasil"
+        loc = geolocator.geocode(endereco4)
+        if loc:
+            return loc.latitude, loc.longitude, "cidade_aproximada"
+
+        return None, None, "nao_encontrado"
+
+    except Exception:
+        return None, None, "erro"
 
 class User(AbstractUser):
 
